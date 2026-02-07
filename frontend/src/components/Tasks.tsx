@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   Container,
   Typography,
@@ -25,7 +25,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import AddIcon from '@mui/icons-material/Add';
 import { useAuth } from '../context/AuthContext';
 import { apiCall } from '../api/api';
-import TaskForm from './TaskForm'; // Import the TaskForm component
+import TaskForm from './TaskForm';
 
 interface Task {
   id: number;
@@ -51,18 +51,21 @@ const Tasks: React.FC = () => {
   const [showForm, setShowForm] = useState<boolean>(false);
   const [editingTask, setEditingTask] = useState<Task | undefined>(undefined);
 
-  const fetchTasks = async () => {
+  // ✅ FIX: useCallback
+  const fetchTasks = useCallback(async () => {
     if (!token) {
       setError('Not authenticated');
       setLoading(false);
       return;
     }
+
     setLoading(true);
     setError(null);
+
     try {
       const fetchedTasks = await apiCall<Task[]>('/api/tasks', {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
       });
       setTasks(fetchedTasks);
@@ -71,19 +74,16 @@ const Tasks: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchTasks();
   }, [token]);
 
+  // ✅ FIX: dependency correct
+  useEffect(() => {
+    fetchTasks();
+  }, [fetchTasks]);
+
   const filteredTasks = tasks.filter((task) => {
-    if (filter === 'completed') {
-      return task.completed;
-    }
-    if (filter === 'incomplete') {
-      return !task.completed;
-    }
+    if (filter === 'completed') return task.completed;
+    if (filter === 'incomplete') return !task.completed;
     return true;
   });
 
@@ -93,11 +93,11 @@ const Tasks: React.FC = () => {
       await apiCall<Task>('/api/tasks', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(data),
       });
-      fetchTasks(); // Refresh tasks after creation
+      fetchTasks();
       setShowForm(false);
     } catch (err: any) {
       setError(err.message || 'Failed to create task');
@@ -110,11 +110,11 @@ const Tasks: React.FC = () => {
       await apiCall<Task>(`/api/tasks/${editingTask.id}`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(data),
       });
-      fetchTasks(); // Refresh tasks after update
+      fetchTasks();
       setShowForm(false);
       setEditingTask(undefined);
     } catch (err: any) {
@@ -128,10 +128,10 @@ const Tasks: React.FC = () => {
       await apiCall<void>(`/api/tasks/${taskId}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
       });
-      fetchTasks(); // Refresh tasks after deletion
+      fetchTasks();
     } catch (err: any) {
       setError(err.message || 'Failed to delete task');
     }
@@ -143,10 +143,10 @@ const Tasks: React.FC = () => {
       await apiCall<Task>(`/api/tasks/${taskId}/complete?completed=${completed}`, {
         method: 'PATCH',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
       });
-      fetchTasks(); // Refresh tasks after update
+      fetchTasks();
     } catch (err: any) {
       setError(err.message || 'Failed to toggle task completion');
     }
@@ -180,10 +180,8 @@ const Tasks: React.FC = () => {
 
   return (
     <Container sx={{ mt: 4 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Typography variant="h4" component="h1">
-          Your Tasks
-        </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+        <Typography variant="h4">Your Tasks</Typography>
         <Button
           variant="contained"
           startIcon={<AddIcon />}
@@ -196,33 +194,29 @@ const Tasks: React.FC = () => {
         </Button>
       </Box>
 
-      <Box sx={{ mb: 2 }}>
-        <ButtonGroup variant="contained" aria-label="task filter button group">
-          <Button
-            onClick={() => setFilter('all')}
-            color={filter === 'all' ? 'primary' : 'inherit'}
-          >
-            All
-          </Button>
-          <Button
-            onClick={() => setFilter('completed')}
-            color={filter === 'completed' ? 'primary' : 'inherit'}
-          >
-            Completed
-          </Button>
-          <Button
-            onClick={() => setFilter('incomplete')}
-            color={filter === 'incomplete' ? 'primary' : 'inherit'}
-          >
-            Incomplete
-          </Button>
-        </ButtonGroup>
-      </Box>
+      <ButtonGroup sx={{ mb: 2 }}>
+        <Button onClick={() => setFilter('all')} variant={filter === 'all' ? 'contained' : 'outlined'}>
+          All
+        </Button>
+        <Button
+          onClick={() => setFilter('completed')}
+          variant={filter === 'completed' ? 'contained' : 'outlined'}
+        >
+          Completed
+        </Button>
+        <Button
+          onClick={() => setFilter('incomplete')}
+          variant={filter === 'incomplete' ? 'contained' : 'outlined'}
+        >
+          Incomplete
+        </Button>
+      </ButtonGroup>
+
       {filteredTasks.length === 0 ? (
         <Typography>No tasks found.</Typography>
       ) : (
         <TableContainer component={Paper}>
-          <Table sx={{ minWidth: 650 }} aria-label="simple table">
+          <Table>
             <TableHead>
               <TableRow>
                 <TableCell>Completed</TableCell>
@@ -233,10 +227,7 @@ const Tasks: React.FC = () => {
             </TableHead>
             <TableBody>
               {filteredTasks.map((task) => (
-                <TableRow
-                  key={task.id}
-                  sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
-                >
+                <TableRow key={task.id}>
                   <TableCell>
                     <Checkbox
                       checked={task.completed}
@@ -246,10 +237,10 @@ const Tasks: React.FC = () => {
                   <TableCell>{task.title}</TableCell>
                   <TableCell>{task.description}</TableCell>
                   <TableCell align="right">
-                    <IconButton aria-label="edit" onClick={() => handleEditClick(task)}>
+                    <IconButton onClick={() => handleEditClick(task)}>
                       <EditIcon />
                     </IconButton>
-                    <IconButton aria-label="delete" onClick={() => handleDeleteTask(task.id)}>
+                    <IconButton onClick={() => handleDeleteTask(task.id)}>
                       <DeleteIcon />
                     </IconButton>
                   </TableCell>
