@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useForm, SubmitHandler } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { TextField, Button, Box, Typography, Container } from '@mui/material';
 
 interface TaskFormInputs {
@@ -14,7 +14,12 @@ interface TaskFormProps {
 }
 
 const TaskForm: React.FC<TaskFormProps> = ({ initialData, onSubmit, onCancel }) => {
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<TaskFormInputs>();
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<TaskFormInputs>();
 
   useEffect(() => {
     if (initialData) {
@@ -37,6 +42,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ initialData, onSubmit, onCancel }) 
         <Typography component="h1" variant="h5">
           {initialData ? 'Edit Task' : 'Create New Task'}
         </Typography>
+
         <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate sx={{ mt: 1 }}>
           <TextField
             margin="normal"
@@ -49,6 +55,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ initialData, onSubmit, onCancel }) 
             error={!!errors.title}
             helperText={errors.title?.message}
           />
+
           <TextField
             margin="normal"
             fullWidth
@@ -58,20 +65,13 @@ const TaskForm: React.FC<TaskFormProps> = ({ initialData, onSubmit, onCancel }) 
             rows={4}
             {...register('description')}
           />
+
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3, mb: 2 }}>
-            <Button
-              type="submit"
-              variant="contained"
-              color="primary"
-              sx={{ mr: 1 }}
-            >
+            <Button type="submit" variant="contained" color="primary">
               {initialData ? 'Update Task' : 'Create Task'}
             </Button>
-            <Button
-              variant="outlined"
-              color="secondary"
-              onClick={onCancel}
-            >
+
+            <Button variant="outlined" color="secondary" onClick={onCancel}>
               Cancel
             </Button>
           </Box>
